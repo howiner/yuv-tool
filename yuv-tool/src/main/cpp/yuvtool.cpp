@@ -12,7 +12,107 @@ bool isEmpty(JNIEnv *env, jbyteArray src, int width, int height);
 bool isEmpty(JNIEnv *env, jbyteArray src, int width, int height) {
     return !(src && env->GetArrayLength(src) && width && height);
 }
+extern "C"
+JNIEXPORT jbyteArray JNICALL
+Java_com_yuv_tool_YuvTool_ImageRGBAToNV12(JNIEnv *env, jclass clazz, jbyteArray rgba8888, jint width, jint height, jint rowPadding, jint rotate) {
+    jsize len = env->GetArrayLength(rgba8888);
+    int width_half = width >> 1;
+    int width_rotate = width;
+    int size_y = width * height;
+    int size_uv = width_half * (height >> 1);
+    if (len <= 0) {
+        return NULL;
+    }
 
+
+    unsigned char* rgba8888_data = static_cast<unsigned char *>(env->GetPrimitiveArrayCritical(rgba8888, 0));
+
+    int nv21_len=width * height * 3 / 2;
+    uint8 argb_data[size_y*4];
+    uint8 argb_rotate_data[size_y*4];
+    uint8 nv21_data[nv21_len];
+    memset(argb_data,0,size_y*4);
+    memset(argb_rotate_data,0,size_y*4);
+    memset(nv21_data,0,nv21_len);
+    int yIndex = 0;
+    int uvIndex = width * height;
+    int argbIndex = 0;
+    int R, G, B, Y, U, V;
+    for (int j = 0; j < height; ++j) {
+        for (int i = 0; i < width; ++i) {
+            R = rgba8888_data[argbIndex++] & 0xFF;
+            G = rgba8888_data[argbIndex++] & 0xFF;
+            B = rgba8888_data[argbIndex++] & 0xFF;
+            argbIndex++;//跳过a
+            Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
+            nv21_data[yIndex++] = ((Y > 0xFF) ? 0xFF : ((Y < 0) ? 0 : Y));
+            //__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "%hhd", yuvData[yIndex - 1]);
+            if ((j & 1) == 0 && ((argbIndex >> 2) & 1) == 0 && uvIndex < nv21_len - 2) {
+                U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
+                V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
+                nv21_data[uvIndex++] = ((V > 0xFF) ? 0xFF : ((V < 0) ? 0 : V));
+                nv21_data[uvIndex++] = ((U > 0xFF) ? 0xFF : ((U < 0) ? 0 : U));
+            }
+        }
+        argbIndex += rowPadding;    //跳过rowPadding长度的填充数据
+    }
+
+
+
+
+    int ret = libyuv::NV21ToARGB(
+            nv21_data, width,
+            nv21_data + size_y, width,
+            argb_data, width * 4,
+            width, height);
+
+
+    libyuv::RotationMode mode;
+    switch (rotate) {
+        case 0:
+            mode = libyuv::kRotate0;
+            break;
+        case 90:
+            mode = libyuv::kRotate90;
+            width_rotate = height;
+            break;
+        case 180:
+            mode = libyuv::kRotate180;
+            break;
+        case 270:
+            mode = libyuv::kRotate270;
+            width_rotate = height;
+            break;
+        default:
+            mode = libyuv::kRotate0;
+            break;
+    }
+
+     ret = libyuv::ARGBRotate(
+             argb_data, width * 4,
+            argb_rotate_data, width_rotate * 4,
+            width, height, mode
+    );
+
+    jbyteArray nv12 = env->NewByteArray(size_y + size_uv * 2);
+    unsigned char* nv12_data = static_cast<unsigned char *>(env->GetPrimitiveArrayCritical(nv12, 0));
+
+    ret = libyuv::ARGBToNV12(
+            argb_data, width * 4,
+            nv12_data, width,
+            nv12_data + size_y, width,
+            width, height
+    );
+
+    env->ReleasePrimitiveArrayCritical(rgba8888, rgba8888, 0);
+    env->ReleasePrimitiveArrayCritical(nv12, nv12_data, 0);
+
+    if (ret != 0) {
+        return NULL;
+    }
+
+    return nv12;
+}
 extern "C"
 JNIEXPORT jbyteArray JNICALL
 Java_com_yuv_tool_YuvTool_NV21ToI420(JNIEnv *env, jclass clazz, jbyteArray nv21, jint width, jint height) {
