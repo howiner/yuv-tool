@@ -2105,6 +2105,7 @@ void ARGBLumaColorTableRow_C(const uint8* src_argb, uint8* dst_argb, int width,
 void ARGBLumaColorTableRow_SSSE3(const uint8* src_argb, uint8* dst_argb,
                                  int width,
                                  const uint8* luma, uint32 lumacoeff);
+    void SwapUVRow_C(const uint8_t* src_uv, uint8_t* dst_vu, int width);
 
 #ifdef __cplusplus
 }  // extern "C"

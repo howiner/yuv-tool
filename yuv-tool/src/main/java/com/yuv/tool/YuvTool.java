@@ -5,6 +5,7 @@ public class YuvTool {
         System.loadLibrary("yuvtool");
     }
 
+    public static native byte[] ImageRGBA8888ToNV12(byte[] rgba, int width, int height, int rowPadding, int rotate);
     public static native byte[] ImageRGBAToNV12(byte[] rgba, int width, int height, int rowPadding, int rotate);
     public static native byte[] ImageRGBAToNV21(byte[] rgba, int width, int height, int rowPadding);
     public static native byte[] NV21ToI420(byte[] nv21, int width, int height);

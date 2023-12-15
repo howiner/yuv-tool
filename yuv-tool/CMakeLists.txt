@@ -12,7 +12,9 @@ set_target_properties( yuv PROPERTIES
 add_library(
         yuvtool
         SHARED
-        ${cpps}/yuvtool.cpp)
+        ${cpps}/yuvtool.cpp
+        ${cpps}/RotateNV_UV.cpp
+        ${cpps}/ConvertNV.cpp)
 
 find_library(
         log-lib
