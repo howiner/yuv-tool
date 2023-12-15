@@ -66,7 +66,7 @@ Java_com_yuv_tool_YuvTool_ImageRGBAToNV21(JNIEnv *env, jclass clazz, jbyteArray 
 extern "C"
 JNIEXPORT jbyteArray JNICALL
 Java_com_yuv_tool_YuvTool_ImageRGBA8888ToNV12(JNIEnv *env, jclass clazz, jbyteArray image, jint width,
-                                            jint height, jint rowPadding, jint rotate) {
+                                              jint height, jint rowPadding, jint rotate) {
     jsize len = env->GetArrayLength(image);
     int width_half = width >> 1;
     int width_rotate = width;
@@ -79,7 +79,6 @@ Java_com_yuv_tool_YuvTool_ImageRGBA8888ToNV12(JNIEnv *env, jclass clazz, jbyteAr
 
     unsigned char *image_data = static_cast<unsigned char *>(env->GetPrimitiveArrayCritical(image,
                                                                                             0));
-
 
     unsigned char *nv21_data = (unsigned char *) malloc(nv21_len);
     memset(nv21_data, 0, nv21_len);
@@ -114,26 +113,20 @@ Java_com_yuv_tool_YuvTool_ImageRGBA8888ToNV12(JNIEnv *env, jclass clazz, jbyteAr
     const uint8_t *nv21VU = nv21Y + size_y;
     uint8_t *nv12Y = reinterpret_cast<uint8_t *>(nv12_data);
     uint8_t *nv12UV = nv12Y + size_y;
-    libyuv::RotationMode mode;
     switch (rotate) {
-        case 0:
-            mode = libyuv::kRotate0;
+        case libyuv::kRotate0:
+            NV21ToNV12Rotate(nv21Y, width, nv21VU, width, nv12Y, width, nv12UV, width, width, height, libyuv::kRotate0);
             break;
-        case 90:
-            mode = libyuv::kRotate90;
+        case libyuv::kRotate90:
+            NV21ToNV12Rotate(nv21Y, width, nv21VU, width, nv12Y, height, nv12UV, height, width, height, libyuv::kRotate90);
             break;
-        case 180:
-            mode = libyuv::kRotate180;
+        case libyuv::kRotate180:
+            NV21ToNV12Rotate(nv21Y, width, nv21VU, width, nv12Y, width, nv12UV, width, width, height, libyuv::kRotate180);
             break;
-        case 270:
-            mode = libyuv::kRotate270;
-            break;
-        default:
-            mode = libyuv::kRotate0;
+        case libyuv::kRotate270:
+            NV21ToNV12Rotate(nv21Y, width, nv21VU, width, nv12Y, height, nv12UV, height, width, height, libyuv::kRotate270);
             break;
     }
-    NV21ToNV12Rotate(nv21Y, width, nv21VU, width, nv12Y, width, nv12UV, width, width, height,
-                     libyuv::kRotate0);
     free(nv21_data);
     env->ReleasePrimitiveArrayCritical(nv12_, nv12_data, 0);
     return nv12_;
